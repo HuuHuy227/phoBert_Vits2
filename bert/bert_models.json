@@ -1,0 +1,6 @@
+{
+    "phobert-base-v2": {
+        "repo_id": "phobert-base-v2",
+        "files": ["pytorch_model.bin", "bpe.codes"]
+    }
+}
