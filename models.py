@@ -685,53 +685,53 @@ class MultiPeriodDiscriminator(torch.nn.Module):
         return y_d_rs, y_d_gs, fmap_rs, fmap_gs
 
 
-class WavLMDiscriminator(nn.Module):
-    """docstring for Discriminator."""
+# class WavLMDiscriminator(nn.Module):
+#     """docstring for Discriminator."""
 
-    def __init__(
-        self, slm_hidden=768, slm_layers=13, initial_channel=64, use_spectral_norm=False
-    ):
-        super(WavLMDiscriminator, self).__init__()
-        norm_f = weight_norm if use_spectral_norm == False else spectral_norm
-        self.pre = norm_f(
-            Conv1d(slm_hidden * slm_layers, initial_channel, 1, 1, padding=0)
-        )
+#     def __init__(
+#         self, slm_hidden=768, slm_layers=13, initial_channel=64, use_spectral_norm=False
+#     ):
+#         super(WavLMDiscriminator, self).__init__()
+#         norm_f = weight_norm if use_spectral_norm == False else spectral_norm
+#         self.pre = norm_f(
+#             Conv1d(slm_hidden * slm_layers, initial_channel, 1, 1, padding=0)
+#         )
 
-        self.convs = nn.ModuleList(
-            [
-                norm_f(
-                    nn.Conv1d(
-                        initial_channel, initial_channel * 2, kernel_size=5, padding=2
-                    )
-                ),
-                norm_f(
-                    nn.Conv1d(
-                        initial_channel * 2,
-                        initial_channel * 4,
-                        kernel_size=5,
-                        padding=2,
-                    )
-                ),
-                norm_f(
-                    nn.Conv1d(initial_channel * 4, initial_channel * 4, 5, 1, padding=2)
-                ),
-            ]
-        )
+#         self.convs = nn.ModuleList(
+#             [
+#                 norm_f(
+#                     nn.Conv1d(
+#                         initial_channel, initial_channel * 2, kernel_size=5, padding=2
+#                     )
+#                 ),
+#                 norm_f(
+#                     nn.Conv1d(
+#                         initial_channel * 2,
+#                         initial_channel * 4,
+#                         kernel_size=5,
+#                         padding=2,
+#                     )
+#                 ),
+#                 norm_f(
+#                     nn.Conv1d(initial_channel * 4, initial_channel * 4, 5, 1, padding=2)
+#                 ),
+#             ]
+#         )
 
-        self.conv_post = norm_f(Conv1d(initial_channel * 4, 1, 3, 1, padding=1))
+#         self.conv_post = norm_f(Conv1d(initial_channel * 4, 1, 3, 1, padding=1))
 
-    def forward(self, x):
-        x = self.pre(x)
+#     def forward(self, x):
+#         x = self.pre(x)
 
-        fmap = []
-        for l in self.convs:
-            x = l(x)
-            x = F.leaky_relu(x, modules.LRELU_SLOPE)
-            fmap.append(x)
-        x = self.conv_post(x)
-        x = torch.flatten(x, 1, -1)
+#         fmap = []
+#         for l in self.convs:
+#             x = l(x)
+#             x = F.leaky_relu(x, modules.LRELU_SLOPE)
+#             fmap.append(x)
+#         x = self.conv_post(x)
+#         x = torch.flatten(x, 1, -1)
 
-        return x
+#         return x
 
 
 class ReferenceEncoder(nn.Module):
@@ -853,6 +853,7 @@ class SynthesizerTrn(nn.Module):
         self.mas_noise_scale_initial = kwargs.get("mas_noise_scale_initial", 0.01)
         self.noise_scale_delta = kwargs.get("noise_scale_delta", 2e-6)
         self.current_mas_noise_scale = self.mas_noise_scale_initial
+        
         if self.use_spk_conditioned_encoder and gin_channels > 0:
             self.enc_gin_channels = gin_channels
         else:

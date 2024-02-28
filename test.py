@@ -340,12 +340,12 @@ net_g = SynthesizerTrn(
         upsample_initial_channel=512,
         upsample_kernel_sizes=[16, 16, 4, 4],
         n_speakers=0,
-        gin_channels=256,
+        gin_channels=0,
         use_sdp=True, 
-        use_transformer_flows=True, # <--- vits2 parameter
-        # (choose from "pre_conv", "fft", "mono_layer_inter_residual", "mono_layer_post_residual")
-        transformer_flow_type="fft", # <--- vits2 parameter 
-        use_spk_conditioned_encoder=True, # <--- vits2 parameter
+        # use_transformer_flows=True, # <--- vits2 parameter
+        # # (choose from "pre_conv", "fft", "mono_layer_inter_residual", "mono_layer_post_residual")
+        # transformer_flow_type="fft", # <--- vits2 parameter 
+        use_spk_conditioned_encoder=False, # <--- vits2 parameter
         use_noise_scaled_mas=True, # <--- vits2 parameter
         use_duration_discriminator=True, # <--- vits2 parameter
     )

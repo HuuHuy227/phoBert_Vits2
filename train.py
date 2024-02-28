@@ -15,7 +15,9 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.cuda.amp import autocast, GradScaler
 import tqdm
+import logging
 
+logging.getLogger("numba").setLevel(logging.WARNING)
 import commons
 import utils
 from data_utils import TextAudioLoader, TextAudioCollate, DistributedBucketSampler
@@ -111,8 +113,8 @@ def run(rank, n_gpus, hps):
         pin_memory=True,
         collate_fn=collate_fn,
         batch_sampler=train_sampler,
-        # persistent_workers=True,
-        # prefetch_factor=4,
+        persistent_workers=True,
+        prefetch_factor=4,
     )
     if rank == 0:
         eval_dataset = TextAudioLoader(hps.data.validation_files, hps.data)
@@ -201,17 +203,17 @@ def run(rank, n_gpus, hps):
     else:
         net_dur_disc = None
         
-    # if (
-    #     "use_spk_conditioned_encoder" in hps.model.keys()
-    #     and hps.model.use_spk_conditioned_encoder == True
-    # ):
-    #     if hps.data.n_speakers == 0:
-    #         print("Warning: use_spk_conditioned_encoder is True but n_speakers is 0")
-    #     print(
-    #         "Setting use_spk_conditioned_encoder to False as model is a single speaker model"
-    #     )
-    # else:
-    #     print("Using normal encoder for VITS1")
+    if (
+        "use_spk_conditioned_encoder" in hps.model.keys()
+        and hps.model.use_spk_conditioned_encoder == True
+    ):
+        if hps.data.n_speakers == 0:
+            print("Warning: use_spk_conditioned_encoder is True but n_speakers is 0")
+        print(
+            "Setting use_spk_conditioned_encoder to False as model is a single speaker model"
+        )
+    else:
+        print("Using normal encoder for VITS1")
 
     net_g = SynthesizerTrn(
         len(symbols),
@@ -451,9 +453,11 @@ def train_and_evaluate(
                     hps.data.mel_fmin,
                     hps.data.mel_fmax,
                 )
+            
             y_mel = commons.slice_segments(
                 mel, ids_slice, hps.train.segment_size // hps.data.hop_length
             )
+
             y_hat_mel = mel_spectrogram_torch(
                 y_hat.squeeze(1),
                 hps.data.filter_length,
@@ -471,7 +475,7 @@ def train_and_evaluate(
 
             # Discriminator
             y_d_hat_r, y_d_hat_g, _, _ = net_d(y, y_hat.detach())
-            with autocast(enabled=False):
+            with autocast(enabled=hps.train.fp16_run):
                 loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(
                     y_d_hat_r, y_d_hat_g
                 )
@@ -498,7 +502,7 @@ def train_and_evaluate(
                 )
                 y_dur_hat_r = y_dur_hat_r + y_dur_hat_r_sdp
                 y_dur_hat_g = y_dur_hat_g + y_dur_hat_g_sdp
-                with autocast(enabled=hps.train.bf16_run, dtype=torch.bfloat16): #(enabled=False):
+                with autocast(enabled=hps.train.fp16_run): #(enabled=False):
                     # TODO: I think need to mean using the mask, but for now, just mean all
                     (
                         loss_dur_disc,
@@ -518,7 +522,7 @@ def train_and_evaluate(
         scaler.scale(loss_disc_all).backward()
         scaler.unscale_(optim_d)
 
-        if getattr(hps.train, "bf16_run", False):
+        if getattr(hps.train, "fp16_run", False):
             torch.nn.utils.clip_grad_norm_(parameters=net_d.parameters(), max_norm=200)
 
         grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
@@ -528,10 +532,11 @@ def train_and_evaluate(
             # Generator
             y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
             if net_dur_disc is not None:
-                y_dur_hat_r, y_dur_hat_g = net_dur_disc(hidden_x, x_mask, logw_, logw)
+                _, y_dur_hat_g = net_dur_disc(hidden_x, x_mask, logw_, logw, g)
                 _, y_dur_hat_g_sdp = net_dur_disc(hidden_x, x_mask, logw_, logw_sdp, g)
                 y_dur_hat_g = y_dur_hat_g + y_dur_hat_g_sdp
-            with autocast(enabled=False):
+
+            with autocast(enabled=hps.train.fp16_run):
                 loss_dur = torch.sum(l_length.float())
                 loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
                 loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
@@ -547,7 +552,7 @@ def train_and_evaluate(
         optim_g.zero_grad()
         scaler.scale(loss_gen_all).backward()
         scaler.unscale_(optim_g)
-        if getattr(hps.train, "bf16_run", False):
+        if getattr(hps.train, "fp16_run", False):
             torch.nn.utils.clip_grad_norm_(parameters=net_g.parameters(), max_norm=500)
         grad_norm_g = commons.clip_grad_value_(net_g.parameters(), None)
         scaler.step(optim_g)
@@ -738,7 +743,6 @@ def evaluate(hps, generator, eval_loader, writer_eval):
             x, x_lengths = x.cuda(), x_lengths.cuda()
             spec, spec_lengths = spec.cuda(), spec_lengths.cuda()
             y, y_lengths = y.cuda(), y_lengths.cuda()
-            speakers = speakers.cuda()
             bert = bert.cuda()
             tone = tone.cuda()
             for use_sdp in [True, False]:
