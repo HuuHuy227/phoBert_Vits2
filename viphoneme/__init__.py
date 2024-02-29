@@ -512,7 +512,7 @@ def vi2IPA_split(texts,delimit):
         #TN=text
         #print("------------------------------------------------------")
         #print("Text normalize:              ",TN)
-        Tk = word_tokenize(TN) #for text normilize
+        TK = word_tokenize(TN) #for text normilize
         #print("Vietnamese Tokenize:         ",TK)
 
         
