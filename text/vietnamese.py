@@ -202,7 +202,6 @@ def refine_tok(phonem, tokens):
             refine_tok.append(phonem[j])
             j += 1
             i += 1    
-    refine_tok.append(phonem[-1])
     return refine_tok
 
 def cal_ph(word):
@@ -230,7 +229,9 @@ def g2p(text):
 
     if len(toks) != len(words): #Handle conflict between phoTokenizer and word segments
         words = refine_tok(words, toks)
-    #print(words)
+    else:
+        words = words[:-1]
+    print(words)
     for word in words:
         if "_" in word: # handle TH tu ghep vd: vi_tri nghien_cuu_vien, ...
             ph_count = 0
