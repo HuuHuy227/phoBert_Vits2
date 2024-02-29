@@ -221,7 +221,8 @@ def g2p(text):
     word2ph = []
 
     text = text.replace('\s+',' ').lower()
-    words, text_normalize = vi2IPA_split(text,delimit="/").split()
+    words, text_normalize = vi2IPA_split(text,delimit="/")
+    words = words.split()
 
     word_seg = segment_sentence(text_normalize)
     input_ids = tokenizer.encode(word_seg)
