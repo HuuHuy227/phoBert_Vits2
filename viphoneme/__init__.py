@@ -508,11 +508,11 @@ def vi2IPA_split(texts,delimit):
     Results =""
     for text in tess:
         #print("------------------------------------------------------")
-        TN= TTSnorm(text)  #Uncomment for text normalize for linux
+        TN = TTSnorm(text)  #Uncomment for text normalize for linux
         #TN=text
         #print("------------------------------------------------------")
         #print("Text normalize:              ",TN)
-        TK= word_tokenize(text) #Tk = word_tokenize(TN) for text normilize
+        Tk = word_tokenize(TN) #for text normilize
         #print("Vietnamese Tokenize:         ",TK)
 
         
@@ -575,7 +575,7 @@ def vi2IPA_split(texts,delimit):
         Results+= IPA.rstrip()+" "+delimit+"."+delimit+" "
 
     
-    return Results.rstrip()
+    return Results.rstrip(), TN
 def vi2IPA(text):
     #print("------------------------------------------------------")
     TN= TTSnorm(text)
