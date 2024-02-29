@@ -56,9 +56,12 @@ class TextAudioLoader(torch.utils.data.Dataset):
         lengths = []
         skipped = 0
         logger.info("Init dataset...")
-        for audiopath, text in self.audiopaths_and_text:
+        for audiopath, text, phones, tone, word2ph in self.audiopaths_and_text:
             if self.min_text_len <= len(text) and len(text) <= self.max_text_len:
-                audiopaths_and_text_new.append([audiopath, text])
+                phones = phones.split(" ")
+                tone = [int(i) for i in tone.split(" ")]
+                word2ph = [int(i) for i in word2ph.split(" ")]
+                audiopaths_and_text_new.append([audiopath, text, phones, tone, word2ph])
                 lengths.append(os.path.getsize(audiopath) // (2 * self.hop_length))
             else:
                 skipped += 1
@@ -67,7 +70,7 @@ class TextAudioLoader(torch.utils.data.Dataset):
             "skipped: "
             + str(skipped)
             + ", total: "
-            + str(len(self.audiopaths_sid_text))
+            + str(len(self.audiopaths_and_text))
         )
         self.audiopaths_and_text = audiopaths_and_text_new
         self.lengths = lengths
