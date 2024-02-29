@@ -231,7 +231,7 @@ def g2p(text):
         words = refine_tok(words, toks)
     else:
         words = words[:-1]
-    print(words)
+    #print(words)
     for word in words:
         if "_" in word: # handle TH tu ghep vd: vi_tri nghien_cuu_vien, ...
             ph_count = 0
