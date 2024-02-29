@@ -5,6 +5,13 @@ from viphoneme import vi2IPA_split
 from text import symbols
 from text.symbols import punctuation
 
+from transformers import AutoTokenizer
+from underthesea import word_tokenize
+
+LOCAL_PATH = "./bert/phobert-base-v2" #Using phobert base. Can change path if want to use large version
+
+tokenizer = AutoTokenizer.from_pretrained(LOCAL_PATH)
+
 def post_replace_ph(ph):
     rep_map = {
         "：": ",",
@@ -147,7 +154,19 @@ def text_normalize(text):
     text = re.sub(r"([,;.\?\!])([\w])", r"\1 \2", text)
     return text
 
+def segment_sentence(text):
+    if text[-1] != '.':
+        text += '.'
+    text = replace_all(text, dict_map)
+    seg_text = word_tokenize(text, format="text") #Need to add end point (.) if it doesn't exist.
+    return seg_text
+
 def refine_ph(phn):
+    """
+        Refine phone
+        Input: phone
+        Output: Calculate phone and tone
+    """
     tone = 0
     if re.search(r"\d", phn[:-1]):
         tone = int(phn[-2])
@@ -157,6 +176,34 @@ def refine_ph(phn):
     else:
         tone = 0
     return phn, tone
+
+def refine_tok(phonem, tokens):
+    """
+        Refine tokenizer between phoTokenizer and word segment
+        Input: phonemizer, tokens of phoTokenizer
+        Output: Refine phonem with length equal to length tokens
+    """
+    i = 0
+    j = 0
+    refine_tok = []
+    while i < len(tokens) - 1: 
+        if "@@" in tokens[i]:
+            if "_" in tokens[i]:
+                refine_tok.extend(phonem[j].split("_"))
+                i += 2
+                j += 1
+            else:
+                ele = phonem[j].split("/")[1:-1]
+                #print(ele)
+                refine_tok.append("/" + ele[0] + "/" +"1")
+                phonem[j] = "/" + "/".join(ele[1:]) # Remove
+                i += 1
+        else:
+            refine_tok.append(phonem[j])
+            j += 1
+            i += 1    
+    refine_tok.append(phonem[-1])
+    return refine_tok
 
 def cal_ph(word):
     ph, tn = refine_ph(word)
@@ -176,6 +223,13 @@ def g2p(text):
     text = text.replace('\s+',' ').lower()
     words = vi2IPA_split(text,delimit="/").split()
 
+    word_seg = segment_sentence(text)
+    input_ids = tokenizer.encode(word_seg)
+    toks = [tokenizer._convert_id_to_token(ids) for ids in input_ids[1:-1]]
+
+    if len(toks) != len(words): #Handle conflict between phoTokenizer and word segments
+        words = refine_tok(words, toks)
+    print(words)
     for word in words:
         if "_" in word: # handle TH tu ghep vd: vi_tri nghien_cuu_vien, ...
             ph_count = 0

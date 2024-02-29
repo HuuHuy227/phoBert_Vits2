@@ -499,6 +499,7 @@ def T2IPA(text):
 
 EN={"a":"ây","ă":"á","â":"ớ","b":"bi","c":"si","d":"đi","đ":"đê","e":"i","ê":"ê","f":"ép","g":"giy","h":"ếch","i":"ai","j":"giây","k":"cây","l":"eo","m":"em","n":"en","o":"âu","ô":"ô","ơ":"ơ","p":"pi","q":"kiu","r":"a","s":"ét","t":"ti","u":"diu","ư":"ư","v":"vi","w":"đắp liu","x":"ít","y":"quai","z":"giét"}
 import re
+
 def vi2IPA_split(texts,delimit):
     content=[]
     with open(imp.find_module('viphoneme')[1]+"/Popular.txt",encoding="utf-8") as f:
@@ -511,6 +512,7 @@ def vi2IPA_split(texts,delimit):
         #TN=text
         #print("------------------------------------------------------")
         #print("Text normalize:              ",TN)
+
         TK= word_tokenize(text) #Tk = word_tokenize(TN) for text normilize
         #print("Vietnamese Tokenize:         ",TK)
 

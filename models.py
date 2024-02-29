@@ -352,7 +352,7 @@ class TextEncoder(nn.Module):
         self.kernel_size = kernel_size
         self.p_dropout = p_dropout
         self.gin_channels = gin_channels
-        self.emb = nn.Embedding(len(symbols), hidden_channels)
+        self.emb = nn.Embedding(n_vocab, hidden_channels)
         nn.init.normal_(self.emb.weight, 0.0, hidden_channels**-0.5)
         self.tone_emb = nn.Embedding(num_tones, hidden_channels)
         nn.init.normal_(self.tone_emb.weight, 0.0, hidden_channels**-0.5)
@@ -736,8 +736,8 @@ class MultiPeriodDiscriminator(torch.nn.Module):
 
 class ReferenceEncoder(nn.Module):
     """
-    inputs --- [N, Ty/r, n_mels*r]  mels
-    outputs --- [N, ref_enc_gru_size]
+    inputs --- [B, Ty/r, n_mels*r]  mels
+    outputs --- [B, ref_enc_gru_size]
     """
 
     def __init__(self, spec_channels, gin_channels=0):
@@ -937,6 +937,7 @@ class SynthesizerTrn(nn.Module):
             g = self.emb_g(sid).unsqueeze(-1)  # [b, h, 1]
         else:
             g = self.ref_enc(y.transpose(1, 2)).unsqueeze(-1)
+        
         x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths, tone,  bert, g=g)
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)

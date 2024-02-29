@@ -2,9 +2,8 @@ import sys
 
 import torch
 from transformers import AutoModel, AutoTokenizer
-from underthesea import word_tokenize
 #from config import config
-from text.vietnamese import dict_map, replace_all
+from text.vietnamese import segment_sentence
 
 LOCAL_PATH = "./bert/phobert-base-v2" #Using phobert base. Can change path if want to use large version
 
@@ -14,12 +13,6 @@ models = dict()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def segment_sentence(text):
-    if text[-1] != '.':
-        text += '.'
-    text = replace_all(text, dict_map)
-    seg_text = word_tokenize(text, format="text") #Need to add end point (.) if it doesn't exist.
-    return seg_text
 
 def get_bert_feature(
     text,
