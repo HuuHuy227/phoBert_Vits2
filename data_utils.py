@@ -2,7 +2,7 @@ import os
 import random
 import torch
 import torch.utils.data
-from tqdm import tqdm
+#from tqdm import tqdm
 from tools.log import logger
 import commons
 from mel_processing import spectrogram_torch, mel_spectrogram_torch
@@ -56,9 +56,12 @@ class TextAudioLoader(torch.utils.data.Dataset):
         lengths = []
         skipped = 0
         logger.info("Init dataset...")
-        for audiopath, text in self.audiopaths_and_text:
+        for audiopath, text, phones, tone, word2ph in self.audiopaths_and_text:
             if self.min_text_len <= len(text) and len(text) <= self.max_text_len:
-                audiopaths_and_text_new.append([audiopath, text])
+                phones = phones.split(" ")
+                tone = [int(i) for i in tone.split(" ")]
+                word2ph = [int(i) for i in word2ph.split(" ")]
+                audiopaths_and_text_new.append([audiopath, text, phones, tone, word2ph])
                 lengths.append(os.path.getsize(audiopath) // (2 * self.hop_length))
             else:
                 skipped += 1
@@ -67,7 +70,7 @@ class TextAudioLoader(torch.utils.data.Dataset):
             "skipped: "
             + str(skipped)
             + ", total: "
-            + str(len(self.audiopaths_sid_text))
+            + str(len(self.audiopaths_and_text))
         )
         self.audiopaths_and_text = audiopaths_and_text_new
         self.lengths = lengths
@@ -174,7 +177,7 @@ class TextAudioCollate:
         """Collate's training batch from normalized text and aduio
         PARAMS
         ------
-        batch: [text_normalized, spec_normalized, wav_normalized]
+        batch: [text_normalized, spec_normalized, wav_normalized, tone, bert]
         """
         # Right zero-pad all one-hot text sequences to max input length
         _, ids_sorted_decreasing = torch.sort(
@@ -191,7 +194,7 @@ class TextAudioCollate:
 
         text_padded = torch.LongTensor(len(batch), max_text_len)
         tone_padded = torch.LongTensor(len(batch), max_text_len)
-        bert_padded = torch.FloatTensor(len(batch), 1024, max_text_len)
+        bert_padded = torch.FloatTensor(len(batch), 768, max_text_len) # Bert base
 
         spec_padded = torch.FloatTensor(len(batch), batch[0][1].size(0), max_spec_len)
         wav_padded = torch.FloatTensor(len(batch), 1, max_wav_len)

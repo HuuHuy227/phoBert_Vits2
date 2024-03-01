@@ -221,15 +221,18 @@ def g2p(text):
     word2ph = []
 
     text = text.replace('\s+',' ').lower()
-    words = vi2IPA_split(text,delimit="/").split()
+    phonemes, text_normalize = vi2IPA_split(text,delimit="/")
+    phonemes = phonemes.split()
 
-    word_seg = segment_sentence(text)
+    word_seg = segment_sentence(text_normalize)
     input_ids = tokenizer.encode(word_seg)
     toks = [tokenizer._convert_id_to_token(ids) for ids in input_ids[1:-1]]
 
     if len(toks) != len(words): #Handle conflict between phoTokenizer and word segments
-        words = refine_tok(words, toks)
-    print(words)
+        words = refine_tok(phonemes, toks)
+    else:
+        words = phonemes[:-1]
+    #print(len(words))
     for word in words:
         if "_" in word: # handle TH tu ghep vd: vi_tri nghien_cuu_vien, ...
             ph_count = 0

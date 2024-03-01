@@ -335,7 +335,7 @@ input_ids = tokenizer.encode(text)
 # input_ids
 #print(text)
 id2tok = [tokenizer._convert_id_to_token(ids) for ids in input_ids[1:-1]]
-print(id2tok)
+print(len(id2tok))
 #print(refine_tok(phonem, id2tok))
 
 
