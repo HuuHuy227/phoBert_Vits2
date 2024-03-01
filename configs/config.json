@@ -15,7 +15,6 @@
       "warmup_epochs": 0,
       "c_mel": 45,
       "c_kl": 1.0,
-      "c_commit": 100,
       "skip_optimizer": true,
       "freeze_VI_bert": false
     },

@@ -303,19 +303,19 @@
 #     #print(res)
 #     # calculate loss and backpropagate
 
-from text.vietnamese import g2p
-from text import vietnamese
-from underthesea import word_tokenize
-from text import vietnamese, cleaned_text_to_sequence
-from text.cleaner import clean_text
-text = "các vùng cấm bay và vùng cấm tàu thuyền qua lại cũng sẽ được thiết lập"
+# from text.vietnamese import g2p
+# from text import vietnamese
+# from underthesea import word_tokenize
+# from text import vietnamese, cleaned_text_to_sequence
+# from text.cleaner import clean_text
+# text = "các vùng cấm bay và vùng cấm tàu thuyền qua lại cũng sẽ được thiết lập"
 
-nortext, phones, tones, word2ph = clean_text(text)
-# print(word_tokenize(text,format="text"))
-# print(nortext)
-print(phones)
-print(tones)
-print(word2ph)
+# nortext, phones, tones, word2ph = clean_text(text)
+# # print(word_tokenize(text,format="text"))
+# # print(nortext)
+# print(phones)
+# print(tones)
+# print(word2ph)
 
 # from viphoneme import vi2IPA_split
 # text = "ca sĩ thái tèo linh chia sẻ con chị không mắc chứng tự kỷ"
@@ -324,18 +324,18 @@ print(word2ph)
 # phonem = vietnamese.vi2IPA_split(text, delimit="/").split()
 # print(phonem)
 
-from transformers import AutoTokenizer
-from underthesea import word_tokenize
+# from transformers import AutoTokenizer
+# from underthesea import word_tokenize
 
-LOCAL_PATH = "bert/phobert-base-v2" #Using phobert base. Can change path if want to use large version
+# LOCAL_PATH = "bert/phobert-base-v2" #Using phobert base. Can change path if want to use large version
 
-text = word_tokenize(text, format="text")
-tokenizer = AutoTokenizer.from_pretrained(LOCAL_PATH)
-input_ids = tokenizer.encode(text)
-# input_ids
-#print(text)
-id2tok = [tokenizer._convert_id_to_token(ids) for ids in input_ids[1:-1]]
-print(len(id2tok))
+# text = word_tokenize(text, format="text")
+# tokenizer = AutoTokenizer.from_pretrained(LOCAL_PATH)
+# input_ids = tokenizer.encode(text)
+# # input_ids
+# #print(text)
+# id2tok = [tokenizer._convert_id_to_token(ids) for ids in input_ids[1:-1]]
+# print(len(id2tok))
 #print(refine_tok(phonem, id2tok))
 
 
@@ -343,51 +343,51 @@ print(len(id2tok))
 
 # print(vietnamese.text_normalize("Xin chào, tên của tôi là Huy 5.5333"))
 
-# import torch
-# from models import SynthesizerTrn
+import torch
+from models import SynthesizerTrn
 
-# net_g = SynthesizerTrn(
-#         n_vocab=256,
-#         spec_channels=80, # <--- vits2 parameter (changed from 513 to 80)
-#         segment_size=8192,
-#         inter_channels=192,
-#         hidden_channels=192,
-#         filter_channels=768,
-#         n_heads=2,
-#         n_layers=6,
-#         kernel_size=3,
-#         p_dropout=0.1,
-#         resblock="1", 
-#         resblock_kernel_sizes=[3, 7, 11],
-#         resblock_dilation_sizes=[[1, 3, 5], [1, 3, 5], [1, 3, 5]],
-#         upsample_rates=[8, 8, 2, 2],
-#         upsample_initial_channel=512,
-#         upsample_kernel_sizes=[16, 16, 4, 4],
-#         n_speakers=0,
-#         gin_channels=0,
-#         use_sdp=True, 
-#         # use_transformer_flows=True, # <--- vits2 parameter
-#         # # (choose from "pre_conv", "fft", "mono_layer_inter_residual", "mono_layer_post_residual")
-#         # transformer_flow_type="fft", # <--- vits2 parameter 
-#         use_spk_conditioned_encoder=False, # <--- vits2 parameter
-#         use_noise_scaled_mas=True, # <--- vits2 parameter
-#         use_duration_discriminator=True, # <--- vits2 parameter
-#     )
+net_g = SynthesizerTrn(
+        n_vocab=256,
+        spec_channels=80, # <--- vits2 parameter (changed from 513 to 80)
+        segment_size=8192,
+        inter_channels=192,
+        hidden_channels=192,
+        filter_channels=768,
+        n_heads=2,
+        n_layers=6,
+        kernel_size=3,
+        p_dropout=0.1,
+        resblock="1", 
+        resblock_kernel_sizes=[3, 7, 11],
+        resblock_dilation_sizes=[[1, 3, 5], [1, 3, 5], [1, 3, 5]],
+        upsample_rates=[8, 8, 2, 2],
+        upsample_initial_channel=512,
+        upsample_kernel_sizes=[16, 16, 4, 4],
+        n_speakers=0,
+        gin_channels=0,
+        use_sdp=True, 
+        use_transformer_flows=True, # <--- vits2 parameter
+        # (choose from "pre_conv", "fft", "mono_layer_inter_residual", "mono_layer_post_residual")
+        transformer_flow_type="fft", # <--- vits2 parameter 
+        use_spk_conditioned_encoder=False, # <--- vits2 parameter
+        use_noise_scaled_mas=True, # <--- vits2 parameter
+        use_duration_discriminator=True, # <--- vits2 parameter
+    )
 
-# x = torch.LongTensor([[1, 2, 3],[4, 5, 6]]) # token ids [2,34]
-# x_lengths = torch.LongTensor([2, 3]) # token lengths
-# y = torch.randn(2, 80, 100) # mel spectrograms
-# y_lengths = torch.Tensor([100, 80]) # mel spectrogram lengths
+x = torch.LongTensor([[1, 2, 3],[4, 5, 6]]) # token ids [2,34]
+x_lengths = torch.LongTensor([2, 3]) # token lengths
+y = torch.randn(2, 80, 100) # mel spectrograms
+y_lengths = torch.Tensor([100, 80]) # mel spectrogram lengths
 
-# tones = torch.LongTensor([[1,1,3],[1,3,4]])
+tones = torch.LongTensor([[1,1,3],[1,3,4]])
     
-# bert = torch.randn(2, 768,3)
-#     # print(bert.size())
-# res = net_g(
-#         x=x,
-#         x_lengths=x_lengths,
-#         y=y,
-#         y_lengths=y_lengths,
-#         tone = tones,
-#         bert = bert
-#     )
+bert = torch.randn(2, 768,3)
+    # print(bert.size())
+res = net_g(
+        x=x,
+        x_lengths=x_lengths,
+        y=y,
+        y_lengths=y_lengths,
+        tone = tones,
+        bert = bert
+    )
