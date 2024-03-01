@@ -9,8 +9,8 @@ import os
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def process_line(x, audio_path, out_path = None):
-    line, add_blank = x
+def process_line(line, audio_path, out_path = None):
+    # line, add_blank = x
     # if use_multi_device:
     #     rank = mp.current_process()._identity
     #     rank = rank[0] if len(rank) > 0 else 0
@@ -26,26 +26,33 @@ def process_line(x, audio_path, out_path = None):
     word2ph = [i for i in word2ph]
     phone, tone = cleaned_text_to_sequence(phone, tone)
 
-    if add_blank:
-        phone = commons.intersperse(phone, 0)
-        tone = commons.intersperse(tone, 0)
-        language = commons.intersperse(language, 0)
-        for i in range(len(word2ph)):
-            word2ph[i] = word2ph[i] * 2
-        word2ph[0] += 1
+    # if add_blank:
+    #     phone = commons.intersperse(phone, 0)
+    #     tone = commons.intersperse(tone, 0)
+    #     language = commons.intersperse(language, 0)
+    #     for i in range(len(word2ph)):
+    #         word2ph[i] = word2ph[i] * 2
+    #     word2ph[0] += 1
 
     bert_path = wav_path.replace(".wav", ".bert.pt")
 
-    try:
-        bert = torch.load(os.path.join(audio_path, bert_path))
-        assert bert.shape[0] == 768 # phoBert base change to 2048 if using phoBert Large
-    except Exception:
-        bert = get_bert(text, word2ph, device)
-        assert bert.shape[-1] == len(phone)
-        if not out_path: 
-            torch.save(bert, os.path.join(audio_path, bert_path))
-        else:
-            torch.save(bert, os.path.join(out_path, bert_path))
+    bert = get_bert(text, word2ph, device)
+    assert bert.shape[-1] == len(phone)
+    if not out_path: 
+      torch.save(bert, os.path.join(audio_path, bert_path))
+    else:
+      torch.save(bert, os.path.join(out_path, bert_path))
+
+    # try:
+    #     bert = torch.load(os.path.join(audio_path, bert_path))
+    #     assert bert.shape[0] == 768 # phoBert base change to 2048 if using phoBert Large
+    # except Exception:
+    #     bert = get_bert(text, word2ph, device)
+    #     assert bert.shape[-1] == len(phone)
+    #     if not out_path: 
+    #         torch.save(bert, os.path.join(audio_path, bert_path))
+    #     else:
+    #         torch.save(bert, os.path.join(out_path, bert_path))
 
 
 if __name__ == "__main__":
@@ -83,6 +90,7 @@ if __name__ == "__main__":
 
     count = 0
     for line in tqdm(lines, total=len(lines), position=0, leave=True):
+        #process_line(line, args.audio_path, args.out_path)
         try:
             process_line(line, args.audio_path, args.out_path)
         except:
