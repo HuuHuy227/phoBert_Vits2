@@ -189,8 +189,9 @@ def refine_tok(phonem, tokens):
     while i < len(tokens) - 1: 
         if "@@" in tokens[i]:
             if "_" in tokens[i]:
-                refine_tok.extend(phonem[j].split("_"))
-                i += 2
+                eles = phonem[j].split("_")
+                refine_tok.extend(eles)
+                i += len(eles)
                 j += 1
             else:
                 ele = phonem[j].split("/")[1:-1]
