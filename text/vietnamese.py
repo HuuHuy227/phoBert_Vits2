@@ -105,7 +105,8 @@ def text_normalize(text):
     text = replace_punctuation(text)
     text = re.sub(r"([,;.\?\!])([\w])", r"\1 \2", text)
     
-    text = TTSnorm(text) #Text norm from vinorm
+    text = TTSnorm(text) #Vinorm Text norm
+    text = text.strip() 
     return text
 
 def segment_sentence(text):
