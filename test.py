@@ -311,7 +311,7 @@ from text.cleaner import clean_text
 from text import check_bert_models, cleaned_text_to_sequence, get_bert
 # from text.pho_bert import get_bert_feature
 # text = "lạc long quân lấy âu cơ sinh ra một bọc trăm trứng nở ra một trăm người con là tổ tiên của người bách việt"
-text = "tiên nhân phật tổ tu la a tu la bồ tát ma vương quỷ đế"
+text = "hồi mình chưa học nấu ăn vào chơi nhà bà dì ở gia lai.".strip()
 # text = "dân gian thường lấy thịt và xương trăn để nấu cao bồi bổ sức khỏe tráng kiện gân"
 # text = "hạt nhân năm ngoái và một loạt thử nghiệm tên lửa đạn đạo"
 phones, tones, word2ph = g2p(text)
@@ -322,9 +322,9 @@ phones, tones, word2ph = g2p(text)
 # print(bert.size())
 # print(word_tokenize(text,format="text"))
 # print(nortext)
-# print(phones)
-# print(tones)
-# print(word2ph)
+print(phones)
+print(tones)
+print(word2ph)
 
 
 

@@ -102,8 +102,8 @@ def text_normalize(text):
     # if text[-1] == ".":
     #     text = text[:-1] # Remove last end point because it causes conflict with viphoneme
     # text = replace_all(text, dict_map)
-    # text = replace_punctuation(text)
-    # text = re.sub(r"([,;.\?\!])([\w])", r"\1 \2", text)
+    text = replace_punctuation(text)
+    text = re.sub(r"([,;.\?\!])([\w])", r"\1 \2", text)
     
     text = TTSnorm(text) #Text norm from vinorm
     return text
@@ -241,17 +241,19 @@ def g2p(text):
     word_seg = segment_sentence(text)
 
     phonemes = vi2IPA_split_seg_word(word_seg,delimit="/")
-    #print(phonemes)
+    # print(phonemes)
     phonemes = phonemes.split()
+    if phonemes[-1] == '/./' and phonemes[-2] == '/./':
+        phonemes = phonemes[:-1] #Remove last point (.)
 
     input_ids = tokenizer.encode(word_seg[0])
     toks = [tokenizer._convert_id_to_token(ids) for ids in input_ids[1:-1]]
-    #print(toks)
+    # print(toks)
     if len(toks) != len(phonemes): #Handle conflict between phoTokenizer and word segments
         words = refine_tok(phonemes, toks)
     else:
         words = phonemes[:-1]
-    #print(words)
+    # print(words)
     assert len(words) == len(toks)
     for word in words:
         if "_" in word: # handle TH tu ghep vd: vi_tri nghien_cuu_vien, ...
