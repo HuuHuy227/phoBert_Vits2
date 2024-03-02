@@ -139,7 +139,8 @@ normal_symbols = [
            ';', 
            'e', 
            't', 
-           "'"]
+           "'",
+           'uk']
 num_tones = 7
 
 # combine all symbols

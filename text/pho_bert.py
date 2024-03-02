@@ -2,8 +2,7 @@ import sys
 
 import torch
 from transformers import AutoModel, AutoTokenizer
-#from config import config
-from text.vietnamese import segment_sentence
+from text.vietnamese import segment_sentence #, tokenizer
 
 LOCAL_PATH = "./bert/phobert-base-v2" #Using phobert base. Can change path if want to use large version
 

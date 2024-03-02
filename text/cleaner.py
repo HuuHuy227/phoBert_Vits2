@@ -1,13 +1,13 @@
 from text import vietnamese, cleaned_text_to_sequence
 
 def clean_text(text):
-    norm_text = vietnamese.text_normalize(text) # This can not be normilized because g2p can normalize (norm_text = vietnamese.text_normalize(text))
+    norm_text = vietnamese.text_normalize(text) 
     phones, tones, word2ph = vietnamese.g2p(norm_text)
     return norm_text, phones, tones, word2ph
 
 
 def clean_text_bert(text):
-    norm_text = text
+    norm_text = vietnamese.text_normalize(text)
     phones, tones, word2ph = vietnamese.g2p(norm_text)
     bert = vietnamese.get_bert_feature(norm_text, word2ph)
     return phones, tones, bert

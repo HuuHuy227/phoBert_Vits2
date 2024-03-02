@@ -340,7 +340,6 @@ from vinorm import *
 from underthesea import word_tokenize
 import eng_to_ipa
 
-
 syms=['ɯəj', 'ɤ̆j', 'ʷiə', 'ɤ̆w', 'ɯəw', 'ʷet', 'iəw', 'uəj', 'ʷen', 'tʰw', 'ʷɤ̆', 'ʷiu', 'kwi', 'ŋ͡m', 'k͡p', 'cw', 'jw', 'uə', 'eə', 'bw', 'oj', 'ʷi', 'vw', 'ăw', 'ʈw', 'ʂw', 'aʊ', 'fw', 'ɛu', 'tʰ', 'tʃ', 'ɔɪ', 'xw', 'ʷɤ', 'ɤ̆', 'ŋw', 'ʊə', 'zi', 'ʷă', 'dw', 'eɪ', 'aɪ', 'ew', 'iə', 'ɣw', 'zw', 'ɯj', 'ʷɛ', 'ɯw', 'ɤj', 'ɔ:', 'əʊ', 'ʷa', 'mw', 'ɑ:', 'hw', 'ɔj', 'uj', 'lw', 'ɪə', 'ăj', 'u:', 'aw', 'ɛj', 'iw', 'aj', 'ɜ:', 'kw', 'nw', 't∫', 'ɲw', 'eo', 'sw', 'tw', 'ʐw', 'iɛ', 'ʷe', 'i:', 'ɯə', 'dʒ', 'ɲ', 'θ', 'ʌ', 'l', 'w', '1', 'ɪ', 'ɯ', 'd', '∫', 'p', 'ə', 'u', 'o', '3', 'ɣ', '!', 'ð', 'ʧ', '6', 'ʒ', 'ʐ', 'z', 'v', 'g', 'ă', '_', 'æ', 'ɤ', '2', 'ʤ', 'i', '.', 'ɒ', 'b', 'h', 'n', 'ʂ', 'ɔ', 'ɛ', 'k', 'm', '5', ' ', 'c', 'j', 'x', 'ʈ', ',', '4', 'ʊ', 's', 'ŋ', 'a', 'ʃ', '?', 'r', ':', 'η', 'f', ';', 'e', 't', "'"]
 
 def normEng (eng,delemit):
@@ -508,11 +507,12 @@ def vi2IPA_split(texts,delimit):
     Results =""
     for text in tess:
         #print("------------------------------------------------------")
-        TN = TTSnorm(text)  #Uncomment for text normalize for linux
+        #TN = TTSnorm(text)  #Uncomment for text normalize for linux
         #TN=text
         #print("------------------------------------------------------")
         #print("Text normalize:              ",TN)
-        TK= word_tokenize(TN) #Tk = word_tokenize(TN) for text normilize
+        TK= word_tokenize(text)
+        print(TK) #Tk = word_tokenize(TN) for text normilize
         #print("Vietnamese Tokenize:         ",TK)
 
         
@@ -574,8 +574,8 @@ def vi2IPA_split(texts,delimit):
         #print("------------------------------------------------------")
         Results+= IPA.rstrip()+" "+delimit+"."+delimit+" "
 
-    
-    return Results.rstrip(), TN
+    return Results.rstrip() #, TN
+
 def vi2IPA(text):
     #print("------------------------------------------------------")
     TN= TTSnorm(text)
@@ -618,3 +618,75 @@ def vi2IPA(text):
     #print("IPA Vietnamese:             ",IPA)
     #print("------------------------------------------------------")
     return IPA
+
+
+def vi2IPA_split_seg_word(seg_texts,delimit):
+    """
+    Input: LIST OF TEXT ALREADY WORD-SEGMENTED!
+    Ouput: Phonemize
+    """
+    content=[]
+    with open(imp.find_module('viphoneme')[1]+"/Popular.txt",encoding="utf-8") as f:
+        content=f.read().splitlines()
+    Results =""
+    for seg_text in seg_texts:        
+        TK = [txt.replace("_"," ") for txt in seg_text.split()]
+        for iuv,under_valid in enumerate(TK):
+            token_under=under_valid.split(" ")
+            checkinvalid=0
+            ##print(token_under)
+            if len(token_under) > 1:
+                for tok in token_under:
+                    if tok not in content or "[" in T2IPA(tok):
+                        checkinvalid=1
+            if checkinvalid==1:
+                TK = TK[:iuv] + TK[iuv+1 :]
+                for tok in reversed(token_under):
+                    TK.insert(iuv, tok)
+
+        IPA=""
+
+        for tk in TK:
+            ipa = T2IPA_split(tk,delimit).replace(" ","_")
+            if ipa =="":
+                IPA+=delimit+tk+delimit+" "
+            elif ipa[0]=="[" and ipa[-1]=="]":
+                eng = eng_to_ipa.convert(tk)
+                if eng[-1] == "*":
+                    if tk.lower().upper() == tk:
+                        ##print("ENGLISH",tk)
+                        #Đọc tiếng anh từng chữ
+                        letter2sound=""
+                        for char in tk:
+                            CHAR = str(char).lower()
+                            if CHAR in list(EN.keys()):
+                                letter2sound+=EN[CHAR]+" "
+                            else:
+                                letter2sound+=char+" "
+                        IPA+=T2IPA_split(letter2sound,delimit)+" "
+                    else:
+                        #Giữ nguyên
+                        #Future: test experiment" Nếu từ unknow có thể dùng eng_norm để chuyển qua thay thế chứ không cần giữ nguyên như này
+                        IPA+=Parsing("default",tk.lower(),delimit)+" "
+                else:
+                    #This use for version english not splited by syllable
+                    IPA+=Parsing("default",eng,delimit)+" "
+                    #This version will split english to each syllable
+                    #IPA+=normEng(tk,delimit)+ delimit+" "
+
+
+                #Check tu dien tieng anh Etrain bưc
+                #Neu co Mapping
+                #Neu khong, check co nguyen am
+                #Neu co de nguyen
+                #Neu khong danh van
+                #print("                                    ..................Out of domain word: " ,ipa)
+            else:
+                IPA+=ipa+" "
+        IPA=re.sub(delimit+'+', delimit, IPA)
+        IPA=re.sub(' +', ' ', IPA)
+        #print("IPA Vietnamese:             ",IPA)
+        #print("------------------------------------------------------")
+        Results+= IPA.rstrip()+" "+delimit+"."+delimit+" "
+
+    return Results.rstrip() #, TN

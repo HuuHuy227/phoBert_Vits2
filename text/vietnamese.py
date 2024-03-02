@@ -1,16 +1,21 @@
 import re
+import os
 
-from viphoneme import vi2IPA_split
+import py_vncorenlp
+from viphoneme import vi2IPA_split_seg_word
 
 from text import symbols
+from vinorm import TTSnorm
 from text.symbols import punctuation
 
 from transformers import AutoTokenizer
-from underthesea import word_tokenize
 
 LOCAL_PATH = "./bert/phobert-base-v2" #Using phobert base. Can change path if want to use large version
+path = os.path.join(os.getcwd(),"py_vncorenlp")
 
 tokenizer = AutoTokenizer.from_pretrained(LOCAL_PATH)
+
+rdrsegmenter = py_vncorenlp.VnCoreNLP(annotators=["wseg"], save_dir=path)
 
 def post_replace_ph(ph):
     rep_map = {
@@ -75,59 +80,6 @@ rep_map = {
     "」": "'",
 }
 
-dict_map = {
-    "òa": "oà",
-    "Òa": "Oà",
-    "ÒA": "OÀ",
-    "óa": "oá",
-    "Óa": "Oá",
-    "ÓA": "OÁ",
-    "ỏa": "oả",
-    "Ỏa": "Oả",
-    "ỎA": "OẢ",
-    "õa": "oã",
-    "Õa": "Oã",
-    "ÕA": "OÃ",
-    "ọa": "oạ",
-    "Ọa": "Oạ",
-    "ỌA": "OẠ",
-    "òe": "oè",
-    "Òe": "Oè",
-    "ÒE": "OÈ",
-    "óe": "oé",
-    "Óe": "Oé",
-    "ÓE": "OÉ",
-    "ỏe": "oẻ",
-    "Ỏe": "Oẻ",
-    "ỎE": "OẺ",
-    "õe": "oẽ",
-    "Õe": "Oẽ",
-    "ÕE": "OẼ",
-    "ọe": "oẹ",
-    "Ọe": "Oẹ",
-    "ỌE": "OẸ",
-    "ùy": "uỳ",
-    "Ùy": "Uỳ",
-    "ÙY": "UỲ",
-    "úy": "uý",
-    "Úy": "Uý",
-    "ÚY": "UÝ",
-    "ủy": "uỷ",
-    "Ủy": "Uỷ",
-    "ỦY": "UỶ",
-    "ũy": "uỹ",
-    "Ũy": "Uỹ",
-    "ŨY": "UỸ",
-    "ụy": "uỵ",
-    "Ụy": "Uỵ",
-    "ỤY": "UỴ",
-    }
-
-def replace_all(text, dict_map):
-    for i, j in dict_map.items():
-        text = text.replace(i, j)
-    return text
-
 def replace_punctuation(text):
     pattern = re.compile("|".join(re.escape(p) for p in rep_map.keys()))
 
@@ -147,18 +99,19 @@ def normalize_numbers(text):
 
 def text_normalize(text):
     #text = normalize_numbers(text)
-    if text[-1] == ".":
-        text = text[:-1] # Remove last end point because it causes conflict with viphoneme
-    text = replace_all(text, dict_map)
-    text = replace_punctuation(text)
-    text = re.sub(r"([,;.\?\!])([\w])", r"\1 \2", text)
+    # if text[-1] == ".":
+    #     text = text[:-1] # Remove last end point because it causes conflict with viphoneme
+    # text = replace_all(text, dict_map)
+    # text = replace_punctuation(text)
+    # text = re.sub(r"([,;.\?\!])([\w])", r"\1 \2", text)
+    
+    text = TTSnorm(text) #Text norm from vinorm
     return text
 
 def segment_sentence(text):
     if text[-1] != '.':
-        text += '.'
-    text = replace_all(text, dict_map)
-    seg_text = word_tokenize(text, format="text") #Need to add end point (.) if it doesn't exist.
+        text += '.' # Need to add end point (.) if it doesn't exist.
+    seg_text = rdrsegmenter.word_segment(text) 
     return seg_text
 
 def refine_ph(phn):
@@ -182,27 +135,92 @@ def refine_tok(phonem, tokens):
         Refine tokenizer between phoTokenizer and word segment
         Input: phonemizer, tokens of phoTokenizer
         Output: Refine phonem with length equal to length tokens
+        O(n^2) ReThinking to optimize 
     """
     i = 0
     j = 0
     refine_tok = []
-    while i < len(tokens) - 1: 
+    n = len(tokens)
+    while i < (n - 1): 
         if "@@" in tokens[i]:
-            if "_" in tokens[i]:
-                refine_tok.extend(phonem[j].split("_"))
-                i += 2
-                j += 1
-            else:
-                ele = phonem[j].split("/")[1:-1]
-                #print(ele)
-                refine_tok.append("/" + ele[0] + "/" +"1")
-                phonem[j] = "/" + "/".join(ele[1:]) # Remove
-                i += 1
+            for k in range(i, n):
+                if "@@" not in tokens[k]: # Break the loop
+                    refine_tok.append(phonem[j])
+                    i = k + 1
+                    j += 1
+                    break
+                if "_" in tokens[i]:
+                    eles = phonem[j].split("_")
+                    phonem[j] = "_".join(eles[1:])
+                    refine_tok.append(eles[0])
+                elif tokens[k] == "<unk>":
+                    refine_tok.append("uk")
+                else:
+                    ele = phonem[j].split("/")[1:-1]
+                    #print(ele)
+                    if ele[0].isnumeric(): #Check if is number
+                        refine_tok.append("uk")
+                        phonem[j] = "/".join(ele[1:]).replace("_","")
+                    else:
+                        refine_tok.append("/" + ele[0] + "/" +"1")
+                        phonem[j] = "/" + "/".join(ele[1:]) # Remove
+                    i += 1
+        elif tokens[i] == '<unk>': # Handle TH unk token
+            refine_tok.append("uk")
+            i += 1
         else:
             refine_tok.append(phonem[j])
             j += 1
             i += 1    
+        # print(i,j)
+        #print(refine_tok)
+        #print(phonem)
+    if '/./' != refine_tok[-1]:
+        refine_tok.append('/./')
     return refine_tok
+
+
+# def refine_tok(phonem, tokens):
+#     """
+#         Refine tokenizer between phoTokenizer and word segment
+#         Input: phonemizer, tokens of phoTokenizer
+#         Output: Refine phonem with length equal to length tokens
+#         (O^n) ReThinking
+#     """
+#     i = 0
+#     j = 0
+#     refine_tok = []
+#     while i < len(tokens) - 2: 
+#         #print(i, j)
+#         if "@@" in tokens[i]:
+#             if "_" in tokens[i] and "@@" not in tokens[i + 1]:
+#                 eles = phonem[j].split("_")
+#                 refine_tok.extend(eles)
+#                 i += len(eles)
+#                 j += 1
+#             elif "_" in tokens[i] and "@@" in tokens[i + 1]:
+#                 eles = phonem[j].split("_")
+#                 refine_tok.append(eles[0])
+#                 phonem[j] = "_".join(eles[1:])
+#                 i += 1
+#             else:
+#                 ele = phonem[j].split("/")[1:-1]
+#                 #print(ele)
+#                 refine_tok.append("/" + ele[0] + "/" +"1")
+#                 phonem[j] = "/" + "/".join(ele[1:]) # Remove
+#                 i += 1
+#         elif tokens[i] == '<unk>': # Handle TH unk token
+#             refine_tok.append("")
+#             i += 1
+#         else:
+#             refine_tok.append(phonem[j])
+#             j += 1
+#             i += 1    
+#         # print(i,j)
+#         #print(refine_tok)
+#     if '/./' not in refine_tok[-1]:
+#         refine_tok.append('/./')
+#     return refine_tok
 
 def cal_ph(word):
     ph, tn = refine_ph(word)
@@ -220,18 +238,21 @@ def g2p(text):
     word2ph = []
 
     text = text.replace('\s+',' ').lower()
-    phonemes, text_normalize = vi2IPA_split(text,delimit="/")
+    word_seg = segment_sentence(text)
+
+    phonemes = vi2IPA_split_seg_word(word_seg,delimit="/")
+    #print(phonemes)
     phonemes = phonemes.split()
 
-    word_seg = segment_sentence(text_normalize)
-    input_ids = tokenizer.encode(word_seg)
+    input_ids = tokenizer.encode(word_seg[0])
     toks = [tokenizer._convert_id_to_token(ids) for ids in input_ids[1:-1]]
-
+    #print(toks)
     if len(toks) != len(phonemes): #Handle conflict between phoTokenizer and word segments
         words = refine_tok(phonemes, toks)
     else:
         words = phonemes[:-1]
     #print(words)
+    assert len(words) == len(toks)
     for word in words:
         if "_" in word: # handle TH tu ghep vd: vi_tri nghien_cuu_vien, ...
             ph_count = 0
