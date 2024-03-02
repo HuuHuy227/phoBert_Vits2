@@ -200,6 +200,7 @@ def g2p(text):
 
     phonemes = vi2IPA_split_seg_word(word_seg,delimit="/")
     #print(phonemes)
+    #print(phonemes)
     phonemes = phonemes.split()
     phonemes = phonemes[:-1] #Phonemes contain 2 point /./ /./ So we must to remove last point (/./)
     
@@ -207,9 +208,13 @@ def g2p(text):
     toks = [tokenizer._convert_id_to_token(ids) for ids in input_ids[1:-1]]
     #print(toks)
     #print(len(toks), len(phonemes))
+    #print(toks)
+    #print(len(toks), len(phonemes))
     if len(toks) != len(phonemes): #Handle conflict between phoTokenizer and word segments
         words = refine_tok(phonemes, toks)
     else:
+        words = phonemes
+    #print(words)
         words = phonemes
     #print(words)
     assert len(words) == len(toks)
