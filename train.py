@@ -432,7 +432,7 @@ def train_and_evaluate(
                 x_mask,
                 z_mask,
                 (z, z_p, m_p, logs_p, m_q, logs_q),
-                (hidden_x, logw, logw_, logw_sdp),
+                (hidden_x, logw, logw_),
             ) = net_g(x, x_lengths, spec, spec_lengths, tone, bert)
 
             if (
