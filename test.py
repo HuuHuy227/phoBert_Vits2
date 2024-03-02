@@ -308,10 +308,10 @@ from text.vietnamese import g2p
 # from underthesea import word_tokenize
 # from text import vietnamese, cleaned_text_to_sequence
 from text.cleaner import clean_text
-from text import check_bert_models, cleaned_text_to_sequence, get_bert
+#from text import check_bert_models, cleaned_text_to_sequence, get_bert
 # from text.pho_bert import get_bert_feature
 # text = "lạc long quân lấy âu cơ sinh ra một bọc trăm trứng nở ra một trăm người con là tổ tiên của người bách việt"
-text = "hồi mình chưa học nấu ăn vào chơi nhà bà dì ở gia lai.".strip()
+text = "ca sĩ thái thùy linh chia sẻ con chị không mắc chứng tự kỷ trong gia đình cũng không có người tự kỷ"
 # text = "dân gian thường lấy thịt và xương trăn để nấu cao bồi bổ sức khỏe tráng kiện gân"
 # text = "hạt nhân năm ngoái và một loạt thử nghiệm tên lửa đạn đạo"
 phones, tones, word2ph = g2p(text)

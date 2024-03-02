@@ -6,7 +6,12 @@ from text.vietnamese import segment_sentence #, tokenizer
 
 LOCAL_PATH = "./bert/phobert-base-v2" #Using phobert base. Can change path if want to use large version
 
-tokenizer = AutoTokenizer.from_pretrained(LOCAL_PATH)
+try:
+    tokenizer = AutoTokenizer.from_pretrained(LOCAL_PATH)
+except:
+    print("Can't load Bert from local dir. Download from hub...")
+    LOCAL_PATH = "vinai/phobert-base-v2"
+    tokenizer = AutoTokenizer.from_pretrained(LOCAL_PATH)
 
 models = dict()
 

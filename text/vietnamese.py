@@ -11,7 +11,7 @@ from text.symbols import punctuation
 from transformers import AutoTokenizer
 
 LOCAL_PATH = "./bert/phobert-base-v2" #Using phobert base. Can change path if want to use large version
-path = os.path.join(os.getcwd(),"py_vncorenlp")
+path = os.path.join(os.getcwd(),"py_vncorenlp") #Get current path
 
 tokenizer = AutoTokenizer.from_pretrained(LOCAL_PATH)
 
@@ -105,7 +105,8 @@ def text_normalize(text):
     text = replace_punctuation(text)
     text = re.sub(r"([,;.\?\!])([\w])", r"\1 \2", text)
     
-    text = TTSnorm(text) #Text norm from vinorm
+    text = TTSnorm(text)
+    text = text.strip() #Text norm from vinorm
     return text
 
 def segment_sentence(text):
@@ -179,49 +180,6 @@ def refine_tok(phonem, tokens):
         refine_tok.append('/./')
     return refine_tok
 
-
-# def refine_tok(phonem, tokens):
-#     """
-#         Refine tokenizer between phoTokenizer and word segment
-#         Input: phonemizer, tokens of phoTokenizer
-#         Output: Refine phonem with length equal to length tokens
-#         (O^n) ReThinking
-#     """
-#     i = 0
-#     j = 0
-#     refine_tok = []
-#     while i < len(tokens) - 2: 
-#         #print(i, j)
-#         if "@@" in tokens[i]:
-#             if "_" in tokens[i] and "@@" not in tokens[i + 1]:
-#                 eles = phonem[j].split("_")
-#                 refine_tok.extend(eles)
-#                 i += len(eles)
-#                 j += 1
-#             elif "_" in tokens[i] and "@@" in tokens[i + 1]:
-#                 eles = phonem[j].split("_")
-#                 refine_tok.append(eles[0])
-#                 phonem[j] = "_".join(eles[1:])
-#                 i += 1
-#             else:
-#                 ele = phonem[j].split("/")[1:-1]
-#                 #print(ele)
-#                 refine_tok.append("/" + ele[0] + "/" +"1")
-#                 phonem[j] = "/" + "/".join(ele[1:]) # Remove
-#                 i += 1
-#         elif tokens[i] == '<unk>': # Handle TH unk token
-#             refine_tok.append("")
-#             i += 1
-#         else:
-#             refine_tok.append(phonem[j])
-#             j += 1
-#             i += 1    
-#         # print(i,j)
-#         #print(refine_tok)
-#     if '/./' not in refine_tok[-1]:
-#         refine_tok.append('/./')
-#     return refine_tok
-
 def cal_ph(word):
     ph, tn = refine_ph(word)
     tmp_ph = ph.split("/")[1:-1]
@@ -241,19 +199,19 @@ def g2p(text):
     word_seg = segment_sentence(text)
 
     phonemes = vi2IPA_split_seg_word(word_seg,delimit="/")
-    # print(phonemes)
+    #print(phonemes)
     phonemes = phonemes.split()
-    if phonemes[-1] == '/./' and phonemes[-2] == '/./':
-        phonemes = phonemes[:-1] #Remove last point (.)
-
+    phonemes = phonemes[:-1] #Phonemes contain 2 point /./ /./ So we must to remove last point (/./)
+    
     input_ids = tokenizer.encode(word_seg[0])
     toks = [tokenizer._convert_id_to_token(ids) for ids in input_ids[1:-1]]
-    # print(toks)
+    #print(toks)
+    #print(len(toks), len(phonemes))
     if len(toks) != len(phonemes): #Handle conflict between phoTokenizer and word segments
         words = refine_tok(phonemes, toks)
     else:
-        words = phonemes[:-1]
-    # print(words)
+        words = phonemes
+    #print(words)
     assert len(words) == len(toks)
     for word in words:
         if "_" in word: # handle TH tu ghep vd: vi_tri nghien_cuu_vien, ...
