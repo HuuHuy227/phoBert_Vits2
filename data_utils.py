@@ -63,7 +63,7 @@ class TextAudioLoader(torch.utils.data.Dataset):
                 tone = [int(i) for i in tone.split(" ")]
                 word2ph = [int(i) for i in word2ph.split(" ")]
                 audiopaths_and_text_new.append([audiopath, text, phones, tone, word2ph])
-                lengths.append(os.path.getsize(audiopath) // (2 * self.hop_length))
+                lengths.append(os.path.getsize(os.path.join(self.data_dir,audiopath)) // (2 * self.hop_length))
             else:
                 skipped += 1
         
