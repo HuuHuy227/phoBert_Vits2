@@ -20,6 +20,7 @@
     },
     "data": {
       "use_mel_posterior_encoder": true,
+      "data_dir": "",
       "training_files": "filelists/train.list",
       "validation_files": "filelists/val.list",
       "max_wav_value": 32768.0,

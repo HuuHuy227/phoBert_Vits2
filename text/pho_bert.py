@@ -2,7 +2,7 @@ import sys
 
 import torch
 from transformers import AutoModel, AutoTokenizer
-from text.vietnamese import segment_sentence #, tokenizer
+from text.vietnamese import segment_sentence, text_normalize #, tokenizer
 
 LOCAL_PATH = "./bert/phobert-base-v2" #Using phobert base. Can change path if want to use large version
 
@@ -36,6 +36,7 @@ def get_bert_feature(
     if device not in models.keys():
         models[device] = AutoModel.from_pretrained(LOCAL_PATH).to(device)
     with torch.no_grad():
+        text = text_normalize(text) # Normalize text
         text = segment_sentence(text)
         inputs = tokenizer(text, return_tensors="pt")
         for i in inputs:

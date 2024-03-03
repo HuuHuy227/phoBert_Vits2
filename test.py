@@ -311,10 +311,13 @@ from text.cleaner import clean_text
 #from text import check_bert_models, cleaned_text_to_sequence, get_bert
 # from text.pho_bert import get_bert_feature
 # text = "lạc long quân lấy âu cơ sinh ra một bọc trăm trứng nở ra một trăm người con là tổ tiên của người bách việt"
-text = "ca sĩ thái thùy linh chia sẻ con chị không mắc chứng tự kỷ trong gia đình cũng không có người tự kỷ"
+text = "ủy ban nhân dân tỉnh quảng ninh và các sở ngành hết sức tạo điều kiện cho doanh nghiệp từ khi triển khai dự án giải phóng mặt bằng lắp đặt thiết bị nhà máy"
 # text = "dân gian thường lấy thịt và xương trăn để nấu cao bồi bổ sức khỏe tráng kiện gân"
 # text = "hạt nhân năm ngoái và một loạt thử nghiệm tên lửa đạn đạo"
 phones, tones, word2ph = g2p(text)
+
+#1, 1, 1, 3, 2, 1, 2, 2, 2, 2, 6, 2, 2, 6, 2, 3, 5, 2, 3, 3, 3, 3, 3, 3, 3, 1, 1
+
 
 # check_bert_models()
 # w2ph = [1, 3, 3, 3, 3, 2, 2, 3, 2, 3, 3, 3, 3, 2, 2, 3, 3, 3, 3, 2, 5, 2, 3, 3, 3, 1, 1]
