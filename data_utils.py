@@ -21,7 +21,7 @@ class TextAudioLoader(torch.utils.data.Dataset):
         self.hparams = hparams
         self.audiopaths_and_text = load_filepaths_and_text(audiopaths_and_text)
         #self.text_cleaners = hparams.text_cleaners
-        self.data_dir = hparams.data_dir
+        self.audio_dir = hparams.audio_dir
         self.bert_dir = hparams.bert_dir
         self.max_wav_value = hparams.max_wav_value
         self.sampling_rate = hparams.sampling_rate
@@ -64,7 +64,7 @@ class TextAudioLoader(torch.utils.data.Dataset):
                 tone = [int(i) for i in tone.split(" ")]
                 word2ph = [int(i) for i in word2ph.split(" ")]
                 audiopaths_and_text_new.append([audiopath, text, phones, tone, word2ph])
-                lengths.append(os.path.getsize(os.path.join(self.data_dir,audiopath)) // (2 * self.hop_length))
+                lengths.append(os.path.getsize(os.path.join(self.audio_dir,audiopath)) // (2 * self.hop_length))
             else:
                 skipped += 1
         
@@ -85,7 +85,7 @@ class TextAudioLoader(torch.utils.data.Dataset):
         bert, phones, tone = self.get_text(
             word2ph, phones, tone,  os.path.join(self.bert_dir,audiopath)
         )
-        spec, wav = self.get_audio(os.path.join(self.data_dir, audiopath))
+        spec, wav = self.get_audio(os.path.join(self.audio_dir, audiopath))
         return (phones, spec, wav, tone, bert) #(text, spec, wav) 
 
     def get_audio(self, filename):

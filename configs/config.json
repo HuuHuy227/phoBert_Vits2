@@ -20,7 +20,7 @@
     },
     "data": {
       "use_mel_posterior_encoder": true,
-      "data_dir": "DUMMY",
+      "audio_dir": "DUMMY",
       "bert_dir": "/kaggle/input/phobert-vits-dataset/final_data",
       "training_files": "filelists/train.list",
       "validation_files": "filelists/val.list",
@@ -43,7 +43,7 @@
       "use_spk_conditioned_encoder": false,
       "use_noise_scaled_mas": true,
       "use_duration_discriminator": true,
-      "duration_discriminator_type": "dur_disc_2",
+      "duration_discriminator_type": "dur_disc_3",
       "inter_channels": 192,
       "hidden_channels": 192,
       "filter_channels": 768,
@@ -58,7 +58,8 @@
       "upsample_initial_channel": 512,
       "upsample_kernel_sizes": [16,16,4,4],
       "n_layers_q": 3,
-      "use_spectral_norm": false
+      "use_spectral_norm": false,
+      "use_sdp": false
     }
   }
   

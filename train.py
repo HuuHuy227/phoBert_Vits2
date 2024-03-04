@@ -26,6 +26,7 @@ from models import (
     MultiPeriodDiscriminator,
     DurationDiscriminatorV1,
     DurationDiscriminatorV2,
+    DurationDiscriminatorV3,
     AVAILABLE_FLOW_TYPES,
     AVAILABLE_DURATION_DISCRIMINATOR_TYPES
 )
@@ -182,6 +183,14 @@ def run(rank, n_gpus, hps):
                 0.1,
                 gin_channels=hps.model.gin_channels if hps.data.n_speakers != 0 else 0,
             ).cuda(rank) 
+        elif duration_discriminator_type == "dur_disc_3":
+            net_dur_disc = DurationDiscriminatorV3(
+                hps.model.hidden_channels,
+                hps.model.hidden_channels,
+                3,
+                0.1,
+                gin_channels=hps.model.gin_channels if hps.data.n_speakers != 0 else 0,
+            ).cuda(rank)
     else:
         print("NOT using any duration discriminator like VITS1")
         net_dur_disc = None
@@ -231,7 +240,8 @@ def run(rank, n_gpus, hps):
     net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm).cuda(rank)
 
     optim_g = torch.optim.AdamW(
-        net_g.parameters(),
+        # net_g.parameters(),
+        filter(lambda p: p.requires_grad, net_g.parameters()),
         hps.train.learning_rate,
         betas=hps.train.betas,
         eps=hps.train.eps,
@@ -256,6 +266,8 @@ def run(rank, n_gpus, hps):
     net_d = DDP(net_d, device_ids=[rank], find_unused_parameters=True)
     if net_dur_disc is not None:
         net_dur_disc = DDP(net_dur_disc, device_ids=[rank], find_unused_parameters=True)
+
+    dur_resume_lr = hps.train.learning_rate
 
     if net_dur_disc is not None:
         try:
@@ -318,7 +330,7 @@ def run(rank, n_gpus, hps):
             utils.get_steps(utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"))
         )
         print(
-            f"******************Found exists checkpoint，epoch {epoch_str}，global step {global_step}*********************"
+            f"******************Found exists checkpoint，at epoch {epoch_str}，global step {global_step}*********************"
         )
     except:
         epoch_str = 1
