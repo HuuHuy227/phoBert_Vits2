@@ -3,7 +3,7 @@
       "log_interval": 200,
       "eval_interval": 1000,
       "seed": 42,
-      "epochs": 300,
+      "epochs": 60,
       "learning_rate": 2e-4,
       "betas": [0.8,0.99],
       "eps": 1e-9,
@@ -42,7 +42,6 @@
       "transformer_flow_type": "pre_conv",
       "use_spk_conditioned_encoder": false,
       "use_noise_scaled_mas": true,
-      "use_wavlm_discriminator": true,
       "inter_channels": 192,
       "hidden_channels": 192,
       "filter_channels": 768,
@@ -58,14 +57,7 @@
       "upsample_kernel_sizes": [16,16,4,4],
       "n_layers_q": 3,
       "use_spectral_norm": false,
-      "use_sdp": false,
-      "slm": {
-        "model": "./slm/wavlm-base-plus",
-        "sr": 16000,
-        "hidden": 768,
-        "nlayers": 13,
-        "initial_channel": 64
-    }
+      "use_sdp": false
     }
   }
   
