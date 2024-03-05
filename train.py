@@ -15,9 +15,9 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.cuda.amp import autocast, GradScaler
 import tqdm
-import logging
+# import logging
 
-logging.getLogger("numba").setLevel(logging.WARNING)
+#logging.getLogger("numba").setLevel(logging.WARNING)
 import commons
 import utils
 from data_utils import TextAudioLoader, TextAudioCollate, DistributedBucketSampler
@@ -27,10 +27,11 @@ from models import (
     DurationDiscriminatorV1,
     DurationDiscriminatorV2,
     DurationDiscriminatorV3,
+    WavLMDiscriminator,
     AVAILABLE_FLOW_TYPES,
     AVAILABLE_DURATION_DISCRIMINATOR_TYPES
 )
-from losses import generator_loss, discriminator_loss, feature_loss, kl_loss
+from losses import generator_loss, discriminator_loss, feature_loss, kl_loss, WavLMLoss
 from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from text.symbols import symbols
 
@@ -196,6 +197,18 @@ def run(rank, n_gpus, hps):
         net_dur_disc = None
         #use_duration_discriminator = False
 
+    if (
+        "use_wavlm_discriminator" in hps.model.keys()
+        and hps.model.use_wavlm_discriminator is True
+    ):
+        print(f"Using WavLM discriminator")
+        net_wd = WavLMDiscriminator(
+            hps.model.slm.hidden, hps.model.slm.nlayers, hps.model.slm.initial_channel
+        ).cuda(rank)
+    else:
+        print("NOT using WavLM discriminator")
+        net_wd = None
+
     # if (
     #     "use_duration_discriminator" in hps.model.keys()
     #     and hps.model.use_duration_discriminator is True
@@ -252,6 +265,17 @@ def run(rank, n_gpus, hps):
         betas=hps.train.betas,
         eps=hps.train.eps,
     )
+
+    if net_wd is not None:
+        optim_wd = torch.optim.AdamW(
+            net_wd.parameters(),
+            hps.train.learning_rate,
+            betas=hps.train.betas,
+            eps=hps.train.eps,
+        )
+    else:
+        optim_wd = None
+
     if net_dur_disc is not None:
         optim_dur_disc = torch.optim.AdamW(
             net_dur_disc.parameters(),
@@ -264,10 +288,15 @@ def run(rank, n_gpus, hps):
 
     net_g = DDP(net_g, device_ids=[rank], find_unused_parameters=True)
     net_d = DDP(net_d, device_ids=[rank], find_unused_parameters=True)
+    
+    if net_wd is not None:  
+        net_wd = DDP(net_wd, device_ids=[rank], find_unused_parameters=512)
+
     if net_dur_disc is not None:
         net_dur_disc = DDP(net_dur_disc, device_ids=[rank], find_unused_parameters=True)
 
     dur_resume_lr = hps.train.learning_rate
+    wd_resume_lr = hps.train.learning_rate
 
     if net_dur_disc is not None:
         try:
@@ -283,6 +312,25 @@ def run(rank, n_gpus, hps):
                 optim_dur_disc.param_groups[0]["initial_lr"] = dur_resume_lr
         except:
             print("Initialize dur_disc")
+
+    if net_wd is not None:
+            try:
+                _, optim_wd, wd_resume_lr, epoch_str = utils.load_checkpoint(
+                    utils.latest_checkpoint_path(hps.model_dir, "WD_*.pth"),
+                    net_wd,
+                    optim_wd,
+                    skip_optimizer=(
+                        hps.train.skip_optimizer
+                        if "skip_optimizer" in hps.train
+                        else True
+                    ),
+                )
+                if not optim_wd.param_groups[0].get("initial_lr"):
+                    optim_wd.param_groups[0]["initial_lr"] = wd_resume_lr
+            except:
+                if not optim_wd.param_groups[0].get("initial_lr"):
+                    optim_wd.param_groups[0]["initial_lr"] = wd_resume_lr
+                print("Initialize wavlm")
 
     # try:
     #     _, _, _, epoch_str = utils.load_checkpoint(
@@ -333,6 +381,7 @@ def run(rank, n_gpus, hps):
             f"******************Found exists checkpoint，at epoch {epoch_str}，global step {global_step}*********************"
         )
     except:
+        print("Training from sratch")
         epoch_str = 1
         global_step = 0
 
@@ -349,6 +398,22 @@ def run(rank, n_gpus, hps):
     else:
         scheduler_dur_disc = None
 
+    if net_wd is not None:
+        scheduler_wd = torch.optim.lr_scheduler.ExponentialLR(
+            optim_wd, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
+        )
+        wl = WavLMLoss(
+            hps.model.slm.model,
+            net_wd,
+            hps.data.sampling_rate,
+            hps.model.slm.sr,
+        ).to(rank)
+    else:
+        scheduler_wd = None
+        wl = None
+
+    logger.info("Start training.")
+
     scaler = GradScaler(enabled=hps.train.fp16_run)
 
     for epoch in range(epoch_str, hps.train.epochs + 1):
@@ -357,9 +422,9 @@ def run(rank, n_gpus, hps):
                 rank,
                 epoch,
                 hps,
-                [net_g, net_d, net_dur_disc],
-                [optim_g, optim_d, optim_dur_disc],
-                [scheduler_g, scheduler_d, scheduler_dur_disc],
+                [net_g, net_d, net_dur_disc, net_wd, wl],
+                [optim_g, optim_d, optim_dur_disc, optim_wd],
+                [scheduler_g, scheduler_d, scheduler_dur_disc, scheduler_wd],
                 scaler,
                 [train_loader, eval_loader],
                 logger,
@@ -370,9 +435,9 @@ def run(rank, n_gpus, hps):
                 rank,
                 epoch,
                 hps,
-                [net_g, net_d, net_dur_disc],
-                [optim_g, optim_d, optim_dur_disc],
-                [scheduler_g, scheduler_d, scheduler_dur_disc],
+                [net_g, net_d, net_dur_disc, net_wd, wl],
+                [optim_g, optim_d, optim_dur_disc, optim_wd],
+                [scheduler_g, scheduler_d, scheduler_dur_disc, scheduler_wd],
                 scaler,
                 [train_loader, None],
                 None,
@@ -380,6 +445,8 @@ def run(rank, n_gpus, hps):
             )
         scheduler_g.step()
         scheduler_d.step()
+        if net_wd is not None:
+            scheduler_wd.step()
         if net_dur_disc is not None:
             scheduler_dur_disc.step()
 
@@ -387,9 +454,9 @@ def run(rank, n_gpus, hps):
 def train_and_evaluate(
     rank, epoch, hps, nets, optims, schedulers, scaler, loaders, logger, writers
 ):
-    net_g, net_d, net_dur_disc = nets
-    optim_g, optim_d, optim_dur_disc = optims
-    scheduler_g, scheduler_d, scheduler_dur_disc = schedulers
+    net_g, net_d, net_dur_disc, net_wd, wl  = nets
+    optim_g, optim_d, optim_dur_disc, optim_wd  = optims
+    scheduler_g, scheduler_d, scheduler_dur_disc, schedular_wd = schedulers
     train_loader, eval_loader = loaders
     if writers is not None:
         writer, writer_eval = writers
@@ -399,6 +466,9 @@ def train_and_evaluate(
 
     net_g.train()
     net_d.train()
+    if net_wd is not None:
+        net_wd.train()
+
     if net_dur_disc is not None:
         net_dur_disc.train()
 
@@ -510,6 +580,8 @@ def train_and_evaluate(
                 )
                 scaler.step(optim_dur_disc)
 
+
+
         optim_d.zero_grad()
         scaler.scale(loss_disc_all).backward()
         scaler.unscale_(optim_d)
@@ -519,11 +591,28 @@ def train_and_evaluate(
         grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
         scaler.step(optim_d)
 
+        # WavLM Discriminator
+        if net_wd is not None:
+            with autocast(enabled=hps.train.fp16_run):
+                    loss_slm = wl.discriminator(
+                        y.detach().squeeze(), y_hat.detach().squeeze()
+                    ).mean()
+
+            scaler.scale(loss_slm).backward()
+            scaler.unscale_(optim_wd)
+            grad_norm_wd = commons.clip_grad_value_(net_wd.parameters(), None)
+            scaler.step(optim_wd)
+
+
         with autocast(enabled=hps.train.fp16_run):
             # Generator
             y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(y, y_hat)
             if net_dur_disc is not None:
                 y_dur_hat_r, y_dur_hat_g = net_dur_disc(hidden_x, x_mask, logw_, logw)
+
+            if net_wd is not None:
+                loss_lm = wl(y.detach().squeeze(), y_hat.squeeze()).mean()
+                loss_lm_gen = wl.generator(y_hat.squeeze())
 
             with autocast(enabled=hps.train.fp16_run):
                 loss_dur = torch.sum(l_length.float())
@@ -534,9 +623,13 @@ def train_and_evaluate(
                 loss_gen, losses_gen = generator_loss(y_d_hat_g)
 
                 loss_gen_all = loss_gen + loss_fm + loss_mel + loss_dur + loss_kl
+                
                 if net_dur_disc is not None:
                     loss_dur_gen, losses_dur_gen = generator_loss(y_dur_hat_g)
-                    loss_gen_all += loss_dur_gen
+                    if net_wd is not None:
+                        loss_gen_all += loss_dur_gen + loss_lm + loss_lm_gen
+                    else:
+                        loss_gen_all += loss_dur_gen
 
         optim_g.zero_grad()
         scaler.scale(loss_gen_all).backward()
@@ -570,6 +663,13 @@ def train_and_evaluate(
                         {
                             "loss/dur_disc/total": loss_dur_disc_all,
                             "grad_norm_dur_disc": grad_norm_dur_disc,
+                        }
+                    )
+                if net_wd is not None:
+                    scalar_dict.update(
+                        {
+                            "loss/wd/total": loss_slm,
+                            "grad_norm_wd": grad_norm_wd,
                         }
                     )
                 scalar_dict.update(
@@ -641,7 +741,15 @@ def train_and_evaluate(
                         epoch,
                         os.path.join(hps.model_dir, "DUR_{}.pth".format(global_step)),
                     )
-                utils.remove_old_checkpoints(hps.model_dir, prefixes=["G_*.pth", "D_*.pth", "DUR_*.pth"])
+                if net_wd is not None:
+                        utils.save_checkpoint(
+                        net_wd,
+                        optim_wd,
+                        hps.train.learning_rate,
+                        epoch,
+                        os.path.join(hps.model_dir, "WD_{}.pth".format(global_step)),
+                    )
+                utils.remove_old_checkpoints(hps.model_dir, prefixes=["G_*.pth", "D_*.pth", "DUR_*.pth", "WD_*.pth"])
                 
         global_step += 1
 
@@ -712,89 +820,6 @@ def evaluate(hps, generator, eval_loader, writer_eval):
         audio_sampling_rate=hps.data.sampling_rate,
     )
     generator.train()
-
-# def evaluate(hps, generator, eval_loader, writer_eval):
-#     generator.eval()
-#     image_dict = {}
-#     audio_dict = {}
-#     print("Evaluating ...")
-#     with torch.no_grad():
-#         for batch_idx, (
-#             x,
-#             x_lengths,
-#             spec,
-#             spec_lengths,
-#             y,
-#             y_lengths,
-#             tone,
-#             bert
-#         ) in enumerate(eval_loader):
-#             x, x_lengths = x.cuda(), x_lengths.cuda()
-#             spec, spec_lengths = spec.cuda(), spec_lengths.cuda()
-#             y, y_lengths = y.cuda(), y_lengths.cuda()
-#             bert = bert.cuda()
-#             tone = tone.cuda()
-#             for use_sdp in [True, False]:
-#                 y_hat, attn, mask, *_ = generator.module.infer(
-#                     x,
-#                     x_lengths,
-#                     tone,
-#                     bert,
-#                     y=spec,
-#                     max_len=1000,
-#                     sdp_ratio=0.0 if not use_sdp else 1.0,
-#                 )
-#                 y_hat_lengths = mask.sum([1, 2]).long() * hps.data.hop_length
-
-#                 mel = spec_to_mel_torch(
-#                     spec,
-#                     hps.data.filter_length,
-#                     hps.data.n_mel_channels,
-#                     hps.data.sampling_rate,
-#                     hps.data.mel_fmin,
-#                     hps.data.mel_fmax,
-#                 )
-#                 y_hat_mel = mel_spectrogram_torch(
-#                     y_hat.squeeze(1).float(),
-#                     hps.data.filter_length,
-#                     hps.data.n_mel_channels,
-#                     hps.data.sampling_rate,
-#                     hps.data.hop_length,
-#                     hps.data.win_length,
-#                     hps.data.mel_fmin,
-#                     hps.data.mel_fmax,
-#                 )
-#                 image_dict.update(
-#                     {
-#                         f"gen/mel_{batch_idx}": utils.plot_spectrogram_to_numpy(
-#                             y_hat_mel[0].cpu().numpy()
-#                         )
-#                     }
-#                 )
-#                 audio_dict.update(
-#                     {
-#                         f"gen/audio_{batch_idx}_{use_sdp}": y_hat[
-#                             0, :, : y_hat_lengths[0]
-#                         ]
-#                     }
-#                 )
-#                 image_dict.update(
-#                     {
-#                         f"gt/mel_{batch_idx}": utils.plot_spectrogram_to_numpy(
-#                             mel[0].cpu().numpy()
-#                         )
-#                     }
-#                 )
-#                 audio_dict.update({f"gt/audio_{batch_idx}": y[0, :, : y_lengths[0]]})
-
-#     utils.summarize(
-#         writer=writer_eval,
-#         global_step=global_step,
-#         images=image_dict,
-#         audios=audio_dict,
-#         audio_sampling_rate=hps.data.sampling_rate,
-#     )
-#     generator.train()
 
 if __name__ == "__main__":
     main()

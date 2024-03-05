@@ -166,6 +166,7 @@ def run():
         print("Using normal MAS for VITS1")
         mas_noise_scale_initial = 0.0
         noise_scale_delta = 0.0
+    
     if (
         "use_duration_discriminator" in hps.model.keys()
         and hps.model.use_duration_discriminator is True
@@ -180,6 +181,17 @@ def run():
         ).cuda(local_rank)
     else:
         net_dur_disc = None
+    
+    if (
+        "use_wavlm_discriminator" in hps.model.keys()
+        and hps.model.use_wavlm_discriminator is True
+    ):
+        net_wd = WavLMDiscriminator(
+            hps.model.slm.hidden, hps.model.slm.nlayers, hps.model.slm.initial_channel
+        )
+    else:
+        net_wd = None
+    
     if (
         "use_spk_conditioned_encoder" in hps.model.keys()
         and hps.model.use_spk_conditioned_encoder is True

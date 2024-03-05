@@ -499,125 +499,125 @@ def T2IPA(text):
 EN={"a":"ây","ă":"á","â":"ớ","b":"bi","c":"si","d":"đi","đ":"đê","e":"i","ê":"ê","f":"ép","g":"giy","h":"ếch","i":"ai","j":"giây","k":"cây","l":"eo","m":"em","n":"en","o":"âu","ô":"ô","ơ":"ơ","p":"pi","q":"kiu","r":"a","s":"ét","t":"ti","u":"diu","ư":"ư","v":"vi","w":"đắp liu","x":"ít","y":"quai","z":"giét"}
 import re
 
-def vi2IPA_split(texts,delimit):
-    content=[]
-    with open(imp.find_module('viphoneme')[1]+"/Popular.txt",encoding="utf-8") as f:
-        content=f.read().splitlines()
-    tess = texts.split(".")
-    Results =""
-    for text in tess:
-        #print("------------------------------------------------------")
-        #TN = TTSnorm(text)  #Uncomment for text normalize for linux
-        #TN=text
-        #print("------------------------------------------------------")
-        #print("Text normalize:              ",TN)
-        TK= word_tokenize(text)
-        print(TK) #Tk = word_tokenize(TN) for text normilize
-        #print("Vietnamese Tokenize:         ",TK)
+# def vi2IPA_split(texts,delimit):
+#     content=[]
+#     with open(imp.find_module('viphoneme')[1]+"/Popular.txt",encoding="utf-8") as f:
+#         content=f.read().splitlines()
+#     tess = texts.split(".")
+#     Results =""
+#     for text in tess:
+#         #print("------------------------------------------------------")
+#         #TN = TTSnorm(text)  #Uncomment for text normalize for linux
+#         #TN=text
+#         #print("------------------------------------------------------")
+#         #print("Text normalize:              ",TN)
+#         TK= word_tokenize(text)
+#         print(TK) #Tk = word_tokenize(TN) for text normilize
+#         #print("Vietnamese Tokenize:         ",TK)
 
         
-        for iuv,under_valid in enumerate(TK):
-            token_under=under_valid.split(" ")
-            checkinvalid=0
-            ##print(token_under)
-            if len(token_under) > 1:
-                for tok in token_under:
-                    if tok not in content or "[" in T2IPA(tok):
-                        checkinvalid=1
-            if checkinvalid==1:
-                TK = TK[:iuv] + TK[iuv+1 :]
-                for tok in reversed(token_under):
-                    TK.insert(iuv, tok)
+#         for iuv,under_valid in enumerate(TK):
+#             token_under=under_valid.split(" ")
+#             checkinvalid=0
+#             ##print(token_under)
+#             if len(token_under) > 1:
+#                 for tok in token_under:
+#                     if tok not in content or "[" in T2IPA(tok):
+#                         checkinvalid=1
+#             if checkinvalid==1:
+#                 TK = TK[:iuv] + TK[iuv+1 :]
+#                 for tok in reversed(token_under):
+#                     TK.insert(iuv, tok)
 
-        IPA=""
+#         IPA=""
 
-        for tk in TK:
-            ipa = T2IPA_split(tk,delimit).replace(" ","_")
-            if ipa =="":
-                IPA+=delimit+tk+delimit+" "
-            elif ipa[0]=="[" and ipa[-1]=="]":
-                eng = eng_to_ipa.convert(tk)
-                if eng[-1] == "*":
-                    if tk.lower().upper() == tk:
-                        ##print("ENGLISH",tk)
-                        #Đọc tiếng anh từng chữ
-                        letter2sound=""
-                        for char in tk:
-                            CHAR = str(char).lower()
-                            if CHAR in list(EN.keys()):
-                                letter2sound+=EN[CHAR]+" "
-                            else:
-                                letter2sound+=char+" "
-                        IPA+=T2IPA_split(letter2sound,delimit)+" "
-                    else:
-                        #Giữ nguyên
-                        #Future: test experiment" Nếu từ unknow có thể dùng eng_norm để chuyển qua thay thế chứ không cần giữ nguyên như này
-                        IPA+=Parsing("default",tk.lower(),delimit)+" "
-                else:
-                    #This use for version english not splited by syllable
-                    IPA+=Parsing("default",eng,delimit)+" "
-                    #This version will split english to each syllable
-                    #IPA+=normEng(tk,delimit)+ delimit+" "
+#         for tk in TK:
+#             ipa = T2IPA_split(tk,delimit).replace(" ","_")
+#             if ipa =="":
+#                 IPA+=delimit+tk+delimit+" "
+#             elif ipa[0]=="[" and ipa[-1]=="]":
+#                 eng = eng_to_ipa.convert(tk)
+#                 if eng[-1] == "*":
+#                     if tk.lower().upper() == tk:
+#                         ##print("ENGLISH",tk)
+#                         #Đọc tiếng anh từng chữ
+#                         letter2sound=""
+#                         for char in tk:
+#                             CHAR = str(char).lower()
+#                             if CHAR in list(EN.keys()):
+#                                 letter2sound+=EN[CHAR]+" "
+#                             else:
+#                                 letter2sound+=char+" "
+#                         IPA+=T2IPA_split(letter2sound,delimit)+" "
+#                     else:
+#                         #Giữ nguyên
+#                         #Future: test experiment" Nếu từ unknow có thể dùng eng_norm để chuyển qua thay thế chứ không cần giữ nguyên như này
+#                         IPA+=Parsing("default",tk.lower(),delimit)+" "
+#                 else:
+#                     #This use for version english not splited by syllable
+#                     IPA+=Parsing("default",eng,delimit)+" "
+#                     #This version will split english to each syllable
+#                     #IPA+=normEng(tk,delimit)+ delimit+" "
 
 
-                #Check tu dien tieng anh Etrain bưc
-                #Neu co Mapping
-                #Neu khong, check co nguyen am
-                #Neu co de nguyen
-                #Neu khong danh van
-                #print("                                    ..................Out of domain word: " ,ipa)
-            else:
-                IPA+=ipa+" "
-        IPA=re.sub(delimit+'+', delimit, IPA)
-        IPA=re.sub(' +', ' ', IPA)
-        #print("IPA Vietnamese:             ",IPA)
-        #print("------------------------------------------------------")
-        Results+= IPA.rstrip()+" "+delimit+"."+delimit+" "
+#                 #Check tu dien tieng anh Etrain bưc
+#                 #Neu co Mapping
+#                 #Neu khong, check co nguyen am
+#                 #Neu co de nguyen
+#                 #Neu khong danh van
+#                 #print("                                    ..................Out of domain word: " ,ipa)
+#             else:
+#                 IPA+=ipa+" "
+#         IPA=re.sub(delimit+'+', delimit, IPA)
+#         IPA=re.sub(' +', ' ', IPA)
+#         #print("IPA Vietnamese:             ",IPA)
+#         #print("------------------------------------------------------")
+#         Results+= IPA.rstrip()+" "+delimit+"."+delimit+" "
 
-    return Results.rstrip() #, TN
+#     return Results.rstrip() #, TN
 
-def vi2IPA(text):
-    #print("------------------------------------------------------")
-    TN= TTSnorm(text)
-    #print("------------------------------------------------------")
-    #print("Text normalize:              ",TN)
-    TK= word_tokenize(TN)
-    #print("Vietnamese Tokenize:         ",TK)
-    IPA=""
-    for tk in TK:
-        ipa = T2IPA(tk).replace(" ","_")
-        if ipa =="":
-            IPA+=tk+" "
-        elif ipa[0]=="[" and ipa[-1]=="]":
-            eng = eng_to_ipa.convert(tk)
-            if eng[-1] == "*":
-                if tk.lower().upper() == tk:
-                    #Đọc tiếng anh từng chữ
-                    letter2sound=""
-                    for char in tk:
-                        CHAR = str(char).lower()
-                        if CHAR in list(EN.keys()):
-                            letter2sound+=EN[CHAR]+" "
-                        else:
-                            letter2sound+=char+" "
-                    IPA+=T2IPA_split(letter2sound,"")+" "
-                else:
-                    #Giữ nguyên
-                    IPA+=Parsing("default",tk,"")+" "
-            else:
-                IPA+=eng+" "
-            #Check tu dien tieng anh Etrain bưc
-            #Neu co Mapping
-            #Neu khong, check co nguyen am
-            #Neu co de nguyen
-            #Neu khong danh van
-            #print("                                    ..................Out of domain word: " ,ipa)
-        else:
-            IPA+=ipa+" "
-    IPA=re.sub(' +', ' ', IPA)
-    #print("IPA Vietnamese:             ",IPA)
-    #print("------------------------------------------------------")
-    return IPA
+# def vi2IPA(text):
+#     #print("------------------------------------------------------")
+#     TN= TTSnorm(text)
+#     #print("------------------------------------------------------")
+#     #print("Text normalize:              ",TN)
+#     TK= word_tokenize(TN)
+#     #print("Vietnamese Tokenize:         ",TK)
+#     IPA=""
+#     for tk in TK:
+#         ipa = T2IPA(tk).replace(" ","_")
+#         if ipa =="":
+#             IPA+=tk+" "
+#         elif ipa[0]=="[" and ipa[-1]=="]":
+#             eng = eng_to_ipa.convert(tk)
+#             if eng[-1] == "*":
+#                 if tk.lower().upper() == tk:
+#                     #Đọc tiếng anh từng chữ
+#                     letter2sound=""
+#                     for char in tk:
+#                         CHAR = str(char).lower()
+#                         if CHAR in list(EN.keys()):
+#                             letter2sound+=EN[CHAR]+" "
+#                         else:
+#                             letter2sound+=char+" "
+#                     IPA+=T2IPA_split(letter2sound,"")+" "
+#                 else:
+#                     #Giữ nguyên
+#                     IPA+=Parsing("default",tk,"")+" "
+#             else:
+#                 IPA+=eng+" "
+#             #Check tu dien tieng anh Etrain bưc
+#             #Neu co Mapping
+#             #Neu khong, check co nguyen am
+#             #Neu co de nguyen
+#             #Neu khong danh van
+#             #print("                                    ..................Out of domain word: " ,ipa)
+#         else:
+#             IPA+=ipa+" "
+#     IPA=re.sub(' +', ' ', IPA)
+#     #print("IPA Vietnamese:             ",IPA)
+#     #print("------------------------------------------------------")
+#     return IPA
 
 
 def vi2IPA_split_seg_word(seg_texts,delimit):

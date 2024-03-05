@@ -20,7 +20,7 @@ psutil
 GPUtil
 vector_quantize_pytorch
 vinorm
-underthesea
+# underthesea
 py_vncorenlp
 eng_to_ipa
 Cython
