@@ -40,6 +40,24 @@ def check_bert_models():
             local_path = Path("./bert").joinpath(k)
             _check_bert(v["repo_id"], v["files"], local_path)
 
+def check_slm_models():
+    import json
+    from pathlib import Path
+
+    from config import config
+    from .bert_utils import _check_slm
+
+    # if config.mirror.lower() == "openi":
+    #     import openi
+
+    #     kwargs = {"token": config.openi_token} if config.openi_token else {}
+    #     openi.login(**kwargs)
+
+    with open("./slm/slm_model.json", "r") as fp:
+        models = json.load(fp)
+        for k, v in models.items():
+            local_path = Path("./slm").joinpath(k)
+            _check_slm(v["repo_id"], v["files"], local_path)
 
 # def init_openjtalk():
 #     import platform
