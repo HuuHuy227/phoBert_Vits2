@@ -1,7 +1,7 @@
 from text.symbols import *
 
 _symbol_to_id = {s: i for i, s in enumerate(symbols)}
-
+_id_to_symbol = {i: s for i, s in enumerate(symbols)}
 
 def cleaned_text_to_sequence(cleaned_text, tones):
     """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
@@ -13,6 +13,13 @@ def cleaned_text_to_sequence(cleaned_text, tones):
     phones = [_symbol_to_id[symbol] for symbol in cleaned_text]
     return phones, tones
 
+def sequence_to_text(sequence):
+    """Converts a sequence of IDs back to a string"""
+    result = ""
+    for symbol_id in sequence:
+        s = _id_to_symbol[symbol_id]
+        result += s
+    return result
 
 def get_bert(norm_text, word2ph, device, style_text=None, style_weight=0.7):
     from .pho_bert import get_bert_feature as vi_bert

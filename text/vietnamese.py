@@ -155,19 +155,19 @@ def refine_tok(phonem, tokens):
                     phonem[j] = "_".join(eles[1:])
                     refine_tok.append(eles[0])
                 elif tokens[k] == "<unk>":
-                    refine_tok.append("uk")
+                    refine_tok.append("UNK")
                 else:
                     ele = phonem[j].split("/")[1:-1]
                     #print(ele)
                     if ele[0].isnumeric(): #Check if is number
-                        refine_tok.append("uk")
+                        refine_tok.append("UNK")
                         phonem[j] = "/".join(ele[1:]).replace("_","")
                     else:
                         refine_tok.append("/" + ele[0] + "/" +"1")
                         phonem[j] = "/" + "/".join(ele[1:]) # Remove
                     i += 1
         elif tokens[i] == '<unk>': # Handle TH unk token
-            refine_tok.append("uk")
+            refine_tok.append("UNK")
             i += 1
         else:
             refine_tok.append(phonem[j])

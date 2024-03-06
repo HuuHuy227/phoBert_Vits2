@@ -105,7 +105,6 @@ normal_symbols = [
            'v', 
            'g', 
            'ă', 
-           '_', 
            'æ', 
            'ɤ', 
            'ʤ', 
@@ -139,12 +138,11 @@ normal_symbols = [
            ';', 
            'e', 
            't', 
-           "'",
-           'uk']
+           "'"]
 num_tones = 7
 
 # combine all symbols
-symbols = [pad] + normal_symbols + pu_symbols
+symbols = [pad] + list(sorted(set(normal_symbols + pu_symbols)))
 sil_phonemes_ids = [symbols.index(i) for i in pu_symbols]
 
 

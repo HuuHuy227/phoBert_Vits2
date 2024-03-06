@@ -1,6 +1,0 @@
-{
-    "wavlm-base-plus": {
-        "repo_id": "wavlm-base-plus",
-        "files": ["pytorch_model.bin"]
-    }
-}

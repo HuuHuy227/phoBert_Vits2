@@ -303,21 +303,29 @@
 #     #print(res)
 #     # calculate loss and backpropagate
 
-# from text.vietnamese import g2p
-# # from text import vietnamese
-# # from underthesea import word_tokenize
-# # from text import vietnamese, cleaned_text_to_sequence
-# from text.cleaner import clean_text
-# #from text import check_bert_models, cleaned_text_to_sequence, get_bert
-# # from text.pho_bert import get_bert_feature
-# # text = "lạc long quân lấy âu cơ sinh ra một bọc trăm trứng nở ra một trăm người con là tổ tiên của người bách việt"
-# text = "ủy ban nhân dân tỉnh quảng ninh và các sở ngành hết sức tạo điều kiện cho doanh nghiệp từ khi triển khai dự án giải phóng mặt bằng lắp đặt thiết bị nhà máy"
-# # text = "dân gian thường lấy thịt và xương trăn để nấu cao bồi bổ sức khỏe tráng kiện gân"
-# # text = "hạt nhân năm ngoái và một loạt thử nghiệm tên lửa đạn đạo"
-# phones, tones, word2ph = g2p(text)
+from text.vietnamese import g2p
+# from text import vietnamese
+# from underthesea import word_tokenize
+# from text import vietnamese, cleaned_text_to_sequence
+from text.cleaner import clean_text
+#from text import check_bert_models, cleaned_text_to_sequence, get_bert
+# from text.pho_bert import get_bert_feature
+# text = "lạc long quân lấy âu cơ sinh ra một bọc trăm trứng nở ra một trăm người con là tổ tiên của người bách việt"
+text = "Hello giờ tôi đi học"
+# text = "dân gian thường lấy thịt và xương trăn để nấu cao bồi bổ sức khỏe tráng kiện gân"
+# text = "hạt nhân năm ngoái và một loạt thử nghiệm tên lửa đạn đạo"
+phones, tones, word2ph = g2p(text)
+print(phones)
+# print(tones)
 
-# #1, 1, 1, 3, 2, 1, 2, 2, 2, 2, 6, 2, 2, 6, 2, 3, 5, 2, 3, 3, 3, 3, 3, 3, 3, 1, 1
-
+#1, 1, 1, 3, 2, 1, 2, 2, 2, 2, 6, 2, 2, 6, 2, 3, 5, 2, 3, 3, 3, 3, 3, 3, 3, 1, 1
+from text import cleaned_text_to_sequence, sequence_to_text
+from text import _symbol_to_id
+phone, tone = cleaned_text_to_sequence(phones, tones)
+print(_symbol_to_id)
+print(phone)
+print(tone)
+print(sequence_to_text(phone))
 
 # # check_bert_models()
 # # w2ph = [1, 3, 3, 3, 3, 2, 2, 3, 2, 3, 3, 3, 3, 2, 2, 3, 3, 3, 3, 2, 5, 2, 3, 3, 3, 1, 1]
@@ -329,8 +337,6 @@
 # print(tones)
 # print(word2ph)
 
-from text import check_slm_models
-check_slm_models()
 
 # Automatically download VnCoreNLP components from the original repository
 # and save them in some local machine folder
